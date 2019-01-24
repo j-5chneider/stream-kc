@@ -1,0 +1,289 @@
+---
+title: "Live-Streaming Knowledge Crystallization"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+runtime: shiny
+---
+
+
+```{r global, include=FALSE}
+library(rtweet)
+library(syuzhet)
+library(tidyverse)
+library(flexdashboard)
+library(shiny)
+library(shinythemes)
+## authenticate via access token
+token <- create_token(
+  app = "stream-kc",
+  consumer_key = "BreUmGElY7QIArzhd3F18qiPr",
+  consumer_secret = "bMrYLd4ZCRgmZcGtyxZ9YKuX3xVoORC5uSdQ5JXh5goR2qJiQc",
+  access_token = "1054844456090980354-gwCegbhxKQIgIpi08MsIA3AsWPVirZ",
+  access_secret = "50tiQOqSwIHdJN9UsGdmUWJlcEXgifZqqpPUhoY7Sm44N")
+
+ossc <- search_tweets(
+        "#ossc19 OR @opensocsci", n = 1000, include_rts = FALSE      # we might want to delete @opensocsci from search query
+      )
+
+ossc$id <- as.numeric(rownames(ossc))
+
+
+# getting sentiment ratings of tweets
+ossc_senti <- get_nrc_sentiment(ossc$text)
+
+# new variable count for plots
+ossc_senti_l <- ossc_senti %>%
+  mutate(id = as.numeric(rownames(.))) %>%
+  gather(key = "variable", value = "valence", 1:10) %>%
+  filter(valence > 0) %>%
+  mutate(count = case_when(
+                    variable == "anger" ~ length(which(variable == "anger")),
+                    variable == "anticipation" ~ length(which(variable == "anticipation")),
+                    variable == "disgust" ~ length(which(variable == "disgust")),
+                    variable == "fear" ~ length(which(variable == "fear")),
+                    variable == "joy" ~ length(which(variable == "joy")),
+                    variable == "sadness" ~ length(which(variable == "sadness")),
+                    variable == "surprise" ~ length(which(variable == "surprise")),
+                    variable == "trust" ~ length(which(variable == "trust")),
+                    variable == "negative" ~ length(which(variable == "negative")),
+                    variable == "positive" ~ length(which(variable == "positive"))
+                    )
+         )
+
+ossc_senti_l$variable <- as.factor(ossc_senti_l$variable)
+
+ossc_senti_l_tw <- left_join(ossc_senti_l, ossc[,c("id", "screen_name", "text")], by = "id")
+
+
+ossc_senti_w_tw <- ossc_senti %>%
+                      mutate(id = as.numeric(rownames(.))) %>%
+                      left_join(., ossc[,c("id", "screen_name", "text")], by = "id")
+
+
+# number for Result page, valueBox 1
+tw_count <- length(ossc$text)
+
+# number for Result page, valueBox 2
+sent_count <- ossc_senti_l %>%
+                filter(variable != "negative" & variable != "positive")
+sent_count <- length(sent_count$variable)
+
+# percentage for Result page, gauge 1
+tw_pos <- ossc_senti %>% filter(positive > 0)
+tw_pos_count <- length(tw_pos$positive)
+tw_pos_perc <- round((tw_pos_count/tw_count)*100, 1)
+
+# percentage for Result page, gauge 2
+tw_neg <- ossc_senti %>% filter(negative > 0)
+tw_neg_count <- length(tw_neg$negative)
+tw_neg_perc <- round((tw_neg_count/tw_count)*100, 1)
+
+```
+
+Design {data-icon="fa-question-circle"}
+========================================================================
+
+Row {data-height=300}
+-----------------------------------------------------------------------
+### Research Questions & Hypotheses
+<p style = "font-size: 1.5em; text-align: center; font-weight:bold;">"Which sentiments dominate on the OSSC19?"</p>
+<div style =" display: flex; justify-content: center;">
+  <div><p style ="font-weight:bold;">Hypothesis 1</p>There are more positive than negative utterances</div>
+  <div style ="margin-left: 5%;"><p style ="font-weight:bold;">Hypothesis 2</p>Valence of positive sentiments is higher than that of negative sentiments</div>
+</div>
+
+
+Row
+-----------------------------------------------------------------------
+### Data Collection {data-icon="fa-list"}
+* using API to scrape your tweets with "#OSSC19" via `library(rtweet)`
+* with survey: e.g. [formr.org](https://formr.org/) offers API
+
+### Data Analysis
+* sentiment analysis with `library(syuzhet)`
+* do tweets contain expressions of
+  + anger, disgust, fear, sadness
+  + anticipation, joy, surprise, trust
+* is tweet overall
+  + negative
+  + positive
+
+### Data Presentation
+* `markdown` file (browser interpretable)
+* compiled as `library(flexdashboard)`
+* interactive: `library(shiny)` runtime
+
+
+
+Results 1 {data-icon="fa-chart-bar"}
+=======================================================================
+
+Row {data-height=150}
+-----------------------------------------------------------------------
+
+### tweets
+```{r}
+valueBox(tw_count, icon = "fa-twitter")
+```
+
+### coded sentiments
+```{r}
+valueBox(sent_count, icon = "fa-grin-hearts")
+```
+
+### positive sentiments
+```{r}
+gauge(tw_pos_perc, min = 0, max = 100, symbol = '%',
+      gaugeSectors(
+        success = c(0, 100)#, warning = c(40, 79), danger = c(0, 39)
+        )
+      )
+```
+
+### negative sentiments
+```{r}
+gauge(tw_neg_perc, min = 0, max = 100, symbol = '%',
+      gaugeSectors(
+        # success = c(0, 100), warning = c(40, 79), 
+        danger = c(0, 100)
+        )
+      )
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Data
+
+```{r}
+dataset1 <- reactive({
+    ossc_senti_l_tw
+  })
+
+dataset2 <- reactive({
+    ossc_senti_w_tw
+  })
+
+library(RColorBrewer)
+
+
+fluidPage(
+  sidebarLayout(
+    sidebarPanel(width = 3,
+                 selectInput('x', 'X-axis', c(names(ossc_senti_w_tw[1:10]), "count", "valence", "sentiments" = "variable"), selected = 'count'),
+                 selectInput('y', 'Y-axis', c(names(ossc_senti_w_tw[1:10]), "count", "valence", "sentiments" = "variable"), selected = 'valence'),
+                 selectInput('color', 'color', c("---" , names(ossc_senti_w_tw[1:10]), "count", "valence", "sentiments" = "variable")),
+                 checkboxInput('jitter', 'data points (jittered)', value = T),
+                 checkboxInput('meanci', 'Mean & CI', value = F),
+                 checkboxInput('violin', 'Density', value = F),
+                 checkboxInput('line', 'Line & Smoother', value = F)
+                 ),
+    mainPanel(width = 9,
+              renderPlot({
+                
+                if (input$x %in% names(ossc_senti_l_tw[2:4]) & input$y %in% names(ossc_senti_l_tw[2:4]))
+                  p <- ggplot(dataset1(), aes_string(x = paste("`", input$x, "`", sep = ""), y = paste("`", input$y, "`", sep = "")))
+                
+                if (input$x %in% names(ossc_senti_w_tw[1:10]) & input$y %in% names(ossc_senti_w_tw[1:10])) {
+                  p <- ggplot(dataset2(), aes_string(x = paste("`", input$x, "`", sep = ""), y = paste("`", input$y, "`", sep = "")))
+                }
+    
+                if (input$jitter)
+                  p <- p + geom_jitter(alpha=0.5, size = 3.1) + scale_colour_gradient(low="#A51E41", high="#2B99FF")
+                
+                # COLORS
+                if ((input$x %in% names(ossc_senti_l_tw[2:4]) & input$y %in% names(ossc_senti_l_tw[2:4])) & input$color %in% names(ossc_senti_l_tw[2:4]))
+                  p <- p + aes_string(color = paste("`", input$color, "`", sep = "")) + scale_color_brewer(palette="Paired")
+                
+                if ((input$x %in% names(ossc_senti_w_tw[1:10]) & input$y %in% names(ossc_senti_w_tw[1:10])) & input$color %in% names(ossc_senti_w_tw[1:10]))
+                  p <- p + aes_string(color = paste("`", input$color, "`", sep = "")) + scale_color_brewer(palette="Paired")
+                
+                if (input$meanci)
+                  p <- p + stat_summary(fun.data = "mean_cl_boot", colour = "red", size=0.45) 
+                
+                if (input$line)
+                  p <- p + stat_smooth(method = "lm")
+                
+                if (input$violin)
+                  p <- p + geom_violin(adjust = 1, alpha = 1/3, colour = "#A51E41", fill = "#FFBCB5")
+                
+                
+                
+                p
+              },
+              width = 650,
+              height = 400)
+              )
+  )
+)
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Results 2
+=======================================================================
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+Waiting time between eruptions and the duration of the eruption for the
+Old Faithful geyser in Yellowstone National Park, Wyoming, USA.
+
+```{r}
+selectInput("n_breaks", label = "Number of bins:",
+            choices = c(10, 20, 35, 50), selected = 20)
+
+sliderInput("bw_adjust", label = "Bandwidth adjustment:",
+            min = 0.2, max = 2, value = 1, step = 0.2)
+```
+
+Column
+-----------------------------------------------------------------------
+
+### Geyser Eruption Duration
+
+```{r}
+renderPlot({
+  hist(faithful$eruptions, probability = TRUE, breaks = as.numeric(input$n_breaks),
+       xlab = "Duration (minutes)", main = "Geyser Eruption Duration")
+  
+  dens <- density(faithful$eruptions, adjust = input$bw_adjust)
+  lines(dens, col = "blue")
+})
+```

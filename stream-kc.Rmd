@@ -1,0 +1,300 @@
+---
+title: "Live-Streaming Knowledge Crystallization"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+runtime: shiny
+---
+
+
+```{r global, include=FALSE}
+library(rtweet)
+library(syuzhet)
+library(tidyverse)
+library(flexdashboard)
+library(shiny)
+library(shinythemes)
+library(BayesFactor)
+
+# authenticate via access token
+token <- create_token(
+  app = "stream-kc",
+  consumer_key = "BreUmGElY7QIArzhd3F18qiPr",
+  consumer_secret = "bMrYLd4ZCRgmZcGtyxZ9YKuX3xVoORC5uSdQ5JXh5goR2qJiQc",
+  access_token = "1054844456090980354-gwCegbhxKQIgIpi08MsIA3AsWPVirZ",
+  access_secret = "50tiQOqSwIHdJN9UsGdmUWJlcEXgifZqqpPUhoY7Sm44N")
+
+
+```
+
+Design {data-icon="fa-question-circle"}
+========================================================================
+
+Row {data-height=300}
+-----------------------------------------------------------------------
+### Research Questions & Hypotheses
+<p style = "font-size: 1.5em; text-align: center; font-weight:bold;">"Which sentiments dominate on the OSSC19?"</p>
+<div style =" display: flex; justify-content: center;">
+  <div><p style ="font-weight:bold;">Hypothesis 1</p>There are more positive than negative utterances</div>
+  <div style ="margin-left: 5%;"><p style ="font-weight:bold;">Hypothesis 2</p>Valence of positive sentiments is higher than that of negative sentiments</div>
+</div>
+
+
+Row
+-----------------------------------------------------------------------
+### Data Collection {data-icon="fa-list"}
+* using API to scrape your tweets with "#OSSC19" via `rtweet`
+* with survey: e.g. [formr.org](https://formr.org/) offers API
+
+### Data Analysis
+* sentiment analysis with `syuzhet`
+* do tweets contain expressions of
+  + anger, disgust, fear, sadness
+  + anticipation, joy, surprise, trust
+* is tweet overall
+  + negative
+  + positive
+
+
+Results #OSSC19 {data-icon="fa-chart-bar"}
+=======================================================================
+
+Row {data-height=150}
+-----------------------------------------------------------------------
+
+### tweets
+```{r}
+
+ossc_r <-  reactive({
+  proxy <- input$refr
+  search_tweets("#ossc19 OR @opensocsci", n = 1000, include_rts = F)      # my created tag that nobody uses: #elsevierisaltruistic 
+  })
+
+ossc_senti_r <- reactive({
+  # getting sentiment ratings of tweets
+  get_nrc_sentiment(ossc_r()$text)
+})
+
+ossc_senti_l_r <- reactive({
+  # new variable count for plots
+  ossc_senti_r() %>%
+    mutate(id = as.numeric(rownames(.))) %>%
+    gather(key = "variable", value = "valence", 1:10) %>%
+    filter(valence > 0) 
+  })
+
+# pre filtering the data for different plots (x-axis sentiments vs. x-axis positive-negative)
+ossc_senti_l_sen <- reactive({ossc_senti_l_r() %>%
+                      filter(variable != "negative" & variable != "positive")
+})
+
+ossc_senti_l_pn <- reactive({ossc_senti_l_r() %>%
+                      filter(variable == "negative" | variable == "positive")
+})
+
+
+# twitter posts count for Result page, valueBox 1
+tw_count_r <- reactive({ length(ossc_r()$text) })
+ 
+
+# count of coded sentiments for Result page, valueBox 2
+sent_count_r <- reactive({
+                  sent_count <- ossc_senti_l_r() %>%
+                                  filter(variable != "negative" & variable != "positive")
+                  length(sent_count$variable)
+                  })
+
+
+# percentage of tweets that contain positive sentiment for Result page, gauge 1
+tw_pos_perc_r <- reactive({
+  tw_pos <- ossc_senti_r() %>% filter(positive > 0)
+  tw_pos_count <- length(tw_pos$positive)
+  round((tw_pos_count/tw_count_r())*100, 1)
+  })
+
+# percentage of tweets that contain negative sentiment for Result page, gauge 2
+tw_neg_perc_r <- reactive({
+  tw_neg <- ossc_senti_r() %>% filter(negative > 0)
+  tw_neg_count <- length(tw_neg$negative)
+  round((tw_neg_count/tw_count_r())*100, 1)
+  })
+
+## BAYES FACTORS #########################################################################################
+
+# BF hypothesis 1 ##
+ossc_senti_chi <- reactive({
+  ch_bf <- ossc_senti_r() %>%
+            mutate(positive = ifelse(positive == 0, 0, 1),
+                   negative = ifelse(negative == 0, 0, 1))
+  ch_bf <- matrix(table(ch_bf$negative, ch_bf$positive), 2, 2)
+  ch_bf <- contingencyTableBF(ch_bf, sampleType = "indepMulti", fixedMargin = "cols")
+  round(exp(1)^ch_bf@bayesFactor$bf, 3)
+})
+
+# BF hypothesis 2 ##
+ossc_senti_tt <- reactive({
+  tt_bf <- ossc_senti_r()
+  tt_bf <- ttestBF(x = ossc_senti_r()$negative, y = ossc_senti_r()$positive, paired = F)
+  round(exp(1)^tt_bf@bayesFactor$bf, 3)
+})
+
+# BF dataset
+bfdata <- reactive({
+  data.frame(xaxis = c("Hyp1", "Hyp2"), yaxis = c(ossc_senti_chi(), ossc_senti_tt()))
+})
+
+## OUTPUT ################################################################################################
+renderValueBox({valueBox(tw_count_r(), icon = "fa-twitter")})
+```
+
+### coded sentiments
+```{r}
+renderValueBox({valueBox(sent_count_r(), icon = "fa-grin-hearts")})
+```
+
+### positive sentiments
+```{r}
+renderGauge({
+  gauge(tw_pos_perc_r(), min = 0, max = 100, symbol = '%',
+      gaugeSectors(
+        success = c(0, 100)#, warning = c(40, 79), danger = c(0, 39)
+        )
+      )
+})
+```
+
+### negative sentiments
+```{r}
+renderGauge({
+  gauge(tw_neg_perc_r(), min = 0, max = 100, symbol = '%',
+      gaugeSectors(
+        # success = c(0, 100), warning = c(40, 79), 
+        danger = c(0, 100)
+        )
+      )
+})
+```
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### Descriptive
+
+```{r}
+
+fluidPage(
+  sidebarLayout(
+    sidebarPanel(width = 3,
+                 selectInput('x', 'X-axis', c("sentiments" = "sentim", "positive vs. negative" = "posneg"), selected = 'variable'),
+                 selectInput('y', 'Y-axis', c("count", "valence"), selected = 'count'),
+                 conditionalPanel(
+                   condition = "input.y == 'valence'",
+                   checkboxInput('jitter', 'data points (jittered)', value = T),
+                   checkboxInput('meanci', 'Mean & CI', value = F)
+                   ),
+                 actionButton('refr', 'pull latest tweets', icon = icon("fa-sync-alt"))
+                 ),
+    mainPanel(width = 9,
+              renderPlot({
+                if (input$x == "sentim" & input$y == "count") {
+                  p <- ggplot(ossc_senti_l_sen(), aes(x = variable, fill = variable)) + 
+                          geom_bar() + theme(legend.position = "none") + 
+                          scale_fill_manual(values=c("#d73232", "#5b9a63", "#dc4c4c", "#e16666", "#75b47d", "#e67f7f", "#8ecd96", "#a8e7b0"))
+                }
+                
+                if (input$x == "posneg" & input$y == "count") {
+                  p <- ggplot(ossc_senti_l_pn(), aes(x = variable, fill = variable)) + 
+                          geom_bar() + 
+                          theme(legend.position = "none") + 
+                          scale_fill_manual(values=c("#d73232", "#5b9a63"))
+                }
+                
+                if (input$x == "sentim" & input$y == "valence") {
+                  p <- ggplot(ossc_senti_l_sen(), aes(x = variable, y = valence, fill = variable)) + 
+                    geom_violin(draw_quantiles = c(0.25, 0.5, 0.75)) + 
+                    theme(legend.position = "none") + 
+                    scale_fill_manual(values=c("#d73232", "#5b9a63", "#dc4c4c", "#e16666", "#75b47d", "#e67f7f", "#8ecd96", "#a8e7b0"))
+                }
+                
+                if (input$x == "posneg" & input$y == "valence") {
+                  p <- ggplot(ossc_senti_l_pn(), aes(x = variable, y = valence, fill = variable)) + 
+                          geom_violin(draw_quantiles = c(0.25, 0.5, 0.75)) + 
+                          theme(legend.position = "none")  + 
+                          scale_fill_manual(values=c("#d73232", "#5b9a63"))
+                }
+                
+                if (input$jitter & input$y == "valence")
+                  p <- p + geom_jitter(alpha=0.5, size = 3.1, height = 0.05, width = 0.3) + scale_colour_gradient(low="#A51E41", high="#2B99FF")
+                
+                if (input$meanci & input$y == "valence")
+                  p <- p + stat_summary(fun.data = "mean_cl_boot", colour = "blue", size=0.7) 
+                
+                p + 
+                  theme(axis.text=element_text(size=16), axis.title=element_text(size=16)) 
+              },
+              # width = 650,
+              height = 300
+              )
+              )
+    
+  )
+)
+
+
+```
+
+
+
+### Bayes Factors
+
+```{r}
+fluidPage(
+  sidebarLayout(
+    sidebarPanel(width = 3,
+                 HTML(paste(tags$b("BF"), tags$sub("hypothesis 1"), "=")),
+                 renderText(ossc_senti_chi()),
+                 hr(),
+                 HTML(paste(tags$b("BF"), tags$sub("hypothesis 2"), "=")),
+                 renderText(ossc_senti_tt())
+    ),
+    mainPanel(width = 9,
+      # renderPlotly({
+      #     ggplot(bfdata(), aes(x=xaxis, y=yaxis)) +
+      #       geom_point(stat="identity", position = "identity") +
+      #       scale_y_continuous(trans='log10') +
+      #       theme(axis.text=element_text(size=12),
+      #             axis.title=element_text(size=12)) +
+      #       labs(title = "Bayes Factors",
+      #        subtitle = "for our two hypotheses",
+      #        x = "Hypotheses",
+      #        y = "BF")
+      # }
+      # )
+        renderPlot({
+          ggplot(bfdata(), aes(x=xaxis, y=yaxis)) +
+            geom_point(stat="identity", position = "identity", size=2) +
+            scale_y_continuous(trans='log10', limits=c(-1,30)) +
+            geom_hline(yintercept=0, color="red", size=1.5) +
+            geom_hline(yintercept=1, color="red", linetype="dashed", size=1.5) +
+            theme(axis.text=element_text(size=16),
+                  axis.title=element_text(size=16)) +
+            labs(x = "",
+                 y = "BF (log10)")
+        },
+        height = 300)
+    )
+  )
+)
+
+```
+
+
+
+
+
+
+
+Results #openscience {data-icon="fa-chart-bar"}
+=======================================================================
+
