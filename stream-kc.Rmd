@@ -18,6 +18,8 @@ library(shinythemes)
 library(BayesFactor)
 
 # authenticate via access token
+# YOU YOULD NEED TO GET YOUR OWN TOKEN
+# CHECK OUT TWITTER FOR DEVELOPERS
 token <- create_token(
   app = "stream-kc",
   consumer_key = "BreUmGElY7QIArzhd3F18qiPr",
@@ -55,6 +57,7 @@ Row
 * is tweet overall
   + negative
   + positive
+* valence of sentiment
 
 
 Results #OSSC19 {data-icon="fa-chart-bar"}
@@ -68,7 +71,7 @@ Row {data-height=150}
 
 ossc_r <-  reactive({
   proxy <- input$refr
-  search_tweets("#ossc19 OR @opensocsci", n = 1000, include_rts = F)      # my created tag that nobody uses: #elsevierisaltruistic 
+  search_tweets("#ossc19", n = 1000, include_rts = F)      # my created tag for text purposes that nobody uses: #elsevierisaltruistic 
   })
 
 ossc_senti_r <- reactive({
@@ -127,8 +130,8 @@ ossc_senti_chi <- reactive({
   ch_bf <- ossc_senti_r() %>%
             mutate(positive = ifelse(positive == 0, 0, 1),
                    negative = ifelse(negative == 0, 0, 1))
-  ch_bf <- matrix(table(ch_bf$negative, ch_bf$positive), 2, 2)
-  ch_bf <- contingencyTableBF(ch_bf, sampleType = "indepMulti", fixedMargin = "cols")
+  ch_bf <- matrix(table(ch_bf$positive, ch_bf$negative), 2, 2)
+  ch_bf <- contingencyTableBF(ch_bf, sampleType = "poisson")
   round(exp(1)^ch_bf@bayesFactor$bf, 3)
 })
 
@@ -192,8 +195,7 @@ fluidPage(
                    condition = "input.y == 'valence'",
                    checkboxInput('jitter', 'data points (jittered)', value = T),
                    checkboxInput('meanci', 'Mean & CI', value = F)
-                   ),
-                 actionButton('refr', 'pull latest tweets', icon = icon("fa-sync-alt"))
+                   )
                  ),
     mainPanel(width = 9,
               renderPlot({
@@ -254,9 +256,10 @@ fluidPage(
     sidebarPanel(width = 3,
                  HTML(paste(tags$b("BF"), tags$sub("hypothesis 1"), "=")),
                  renderText(ossc_senti_chi()),
-                 hr(),
                  HTML(paste(tags$b("BF"), tags$sub("hypothesis 2"), "=")),
-                 renderText(ossc_senti_tt())
+                 renderText(ossc_senti_tt()),
+                 hr(),
+                 actionButton('refr', 'pull latest tweets', icon = icon("fa-sync-alt"))
     ),
     mainPanel(width = 9,
       # renderPlotly({
@@ -288,13 +291,3 @@ fluidPage(
 )
 
 ```
-
-
-
-
-
-
-
-Results #openscience {data-icon="fa-chart-bar"}
-=======================================================================
-

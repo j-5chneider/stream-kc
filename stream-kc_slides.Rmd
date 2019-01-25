@@ -11,6 +11,7 @@ output:
     smaller: true
     logo: webs/logo.gif
     css:  webs/styles.css
+bibliography: webs/literature.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -30,6 +31,14 @@ library(shiny)
 <div class = "container">
   <div class="margcent"><img src = "webs/osf.png" id = "osf" /></div>
   <div class="margcent"><img src = "webs/aspred.png" id = "aspred" /></div>
+</div>
+
+<div class="source">
+  [@Nosek2600]
+</div>
+
+<div class="myfooter">
+  `r icon(name="github", lib="font-awesome")` slides and app: [github.com/j-5chneider/stream-kc](https://github.com/j-5chneider/stream-kc)
 </div>
 
 <div class="notes">
@@ -64,6 +73,14 @@ library(shiny)
   <div class="boxfr boxbg"><p class="semibig"><b>Analyses</b></p></div>
   <div class="boxar">`r icon(name="arrow-right", lib="font-awesome")`</div>
   <div class="boxfr boxbg"><p class="semibig"><b>Dissemination</b></p></div>
+</div>
+
+<div class="source">
+  [@Nosek2600]
+</div>
+
+<div class="myfooter">
+  `r icon(name="github", lib="font-awesome")` slides and app: [github.com/j-5chneider/stream-kc](https://github.com/j-5chneider/stream-kc)
 </div>
 
 <div class="notes">
@@ -115,6 +132,13 @@ library(shiny)
   <div class="boxfr boxbg"><p class="semibig"><b>Dissemination</b></p></div>
 </div>
 
+<div class="source">
+  [@Nosek2600]
+</div>
+
+<div class="myfooter">
+  `r icon(name="github", lib="font-awesome")` slides and app: [github.com/j-5chneider/stream-kc](https://github.com/j-5chneider/stream-kc)
+</div>
 
 
 <div class="notes">
@@ -171,6 +195,14 @@ so basically: we know how we'll analyze the data and it's all there except the d
   <div class="boxfr big"></div>
 </div>
 
+<div class="source">
+  [@Nosek2600]
+</div>
+
+<div class="myfooter">
+  `r icon(name="github", lib="font-awesome")` slides and app: [github.com/j-5chneider/stream-kc](https://github.com/j-5chneider/stream-kc)
+</div>
+
 
 ## `r paste(icon(name="copy", lib="font-awesome"), "Reproducible Reporting")` | aka what others see how knowledge came to be
 
@@ -204,10 +236,16 @@ so basically: we know how we'll analyze the data and it's all there except the d
   - credibility
   - meta analyses
   
-  Might move between a simple tet publication...
+  Might move between a simple text publication...
 </div>
 
-Source: Peng 2011
+<div class="source">
+  [@Peng1226]
+</div>
+
+<div class="myfooter">
+  `r icon(name="github", lib="font-awesome")` slides and app: [github.com/j-5chneider/stream-kc](https://github.com/j-5chneider/stream-kc)
+</div>
 
 
 ## `r paste(icon(name="copy", lib="font-awesome"), "Reproducible Reporting")` | aka what others see how knowledge came to be
@@ -240,7 +278,14 @@ Source: Peng 2011
   ... to publication plus the code of analyses
 </div>
 
-Source: Peng 2011
+
+<div class="source">
+  [@Peng1226]
+</div>
+
+<div class="myfooter">
+  `r icon(name="github", lib="font-awesome")` slides and app: [github.com/j-5chneider/stream-kc](https://github.com/j-5chneider/stream-kc)
+</div>
 
 
 ## `r paste(icon(name="copy", lib="font-awesome"), "Reproducible Reporting")` | aka what others see how knowledge came to be
@@ -269,11 +314,17 @@ Source: Peng 2011
   <div class="boxfr boxbg"><p class="semibig"><b>Dissemination</b></p></div>
 </div>
 
+<div class="source">
+  [@Peng1226]
+</div>
+
+<div class="myfooter">
+  `r icon(name="github", lib="font-awesome")` slides and app: [github.com/j-5chneider/stream-kc](https://github.com/j-5chneider/stream-kc)
+</div>
+
 <div class="notes">
   ... to publication plus the code of analyses plus the data
 </div>
-
-Source: Peng 2011
 
 
 ## `r paste(icon(name="copy", lib="font-awesome"), "Reproducible Reporting")` | aka what others see how knowledge came to be
@@ -314,12 +365,18 @@ Source: Peng 2011
   <div class="boxfr big" style="padding-top:15px;"><img src="webs/rmd.png" class="rstudio" /><img src="webs/shiny.png" class="rstudio1" /></div>
 </div>
 
+<div class="source">
+  [@Peng1226]
+</div>
+
+<div class="myfooter">
+  `r icon(name="github", lib="font-awesome")` slides and app: [github.com/j-5chneider/stream-kc](https://github.com/j-5chneider/stream-kc)
+</div>
+
 <div class="notes">
   Such reproducible reports are normally created after data collection and analyses
   and give us an impression of "how knowledge came to be"
 </div>
-
-Source: Peng 2011
 
 
 ## `r paste(icon(name="wifi", lib="font-awesome"), "Live-Streaming Knowledge Crystalization")` | via Dashboards
@@ -370,6 +427,10 @@ Source: Peng 2011
   <div class="boxfr" style="width:33%"></div>
 </div>
 
+<div class="myfooter">
+  `r icon(name="github", lib="font-awesome")` slides and app: [github.com/j-5chneider/stream-kc](https://github.com/j-5chneider/stream-kc)
+</div>
+
 <div class="notes">
 but why are we waiting to disseminate our study until data collection is finished?
 it's all there
@@ -390,14 +451,27 @@ With R Markdown we can...
   + `r icon(name="comments", lib="font-awesome")` narratives
   + `r icon(name="database", lib="font-awesome")` data/ files
   + `r icon(name="file-code", lib="font-awesome")` code
-  + `r icon(name="chart-bar", lib="font-awesome")` output via `knitr` and `pandoc`
-* into multiple different file types (.html, .pdf, .docx, pptx, ...)
+  + `r icon(name="chart-bar", lib="font-awesome")` output
+* via `knitr` and `pandoc` into multiple different file types (.html, .pdf, .docx, pptx, ...)
 
+<div class="source">
+  [@rmarkdown]
+</div>
 
+<div class="myfooter">
+  `r icon(name="github", lib="font-awesome")` slides and app: [github.com/j-5chneider/stream-kc](https://github.com/j-5chneider/stream-kc)
+</div>
 
 
 ## {data-background=webs/rmd_ex.png data-background-size=contain}
 
+<div class="source">
+  [@rmarkdown]
+</div>
+
+<div class="myfooter">
+  `r icon(name="github", lib="font-awesome")` slides and app: [github.com/j-5chneider/stream-kc](https://github.com/j-5chneider/stream-kc)
+</div>
 
 ## <img src = "webs/shiny.png" class = "plogo" style = "height:43px" /> Interactive Reporting | general idea
 
@@ -406,24 +480,18 @@ With R Markdown we can...
   + data exploration (e.g. by recipients)
   + flexible (live streamed) data presentation
 
-`r icon(name="arrow-right", lib="font-awesome")` interactive reporting
-
 <div class = "container">
   <div class="margcent1" style="width:90%;"><img src="webs/shiny_ex.png" class = "fullw" /></div>
 </div>
 
-
-## <img src = "webs/rmd.png" class = "plogo" style="padding-top: 2px" /><img src = "webs/shiny.png" class = "plogo" style = "height:43px" /> Flexdashboard for R
-with this bit of code<br />
-<div style="text-align:center;">
-<img src="webs/flexdash.png" style="height: 500px" />
+<div class="source">
+  [@shiny]
 </div>
 
-## <img src = "webs/rmd.png" class = "plogo" style="padding-top: 2px" /><img src = "webs/shiny.png" class = "plogo" style = "height:43px" /> Flexdashboard for R
-you can create this interactive app<br />
-<div style="text-align:center;">
-<img src="webs/flexdash_ex.png" style="height: 500px" />
+<div class="myfooter">
+  `r icon(name="github", lib="font-awesome")` slides and app: [github.com/j-5chneider/stream-kc](https://github.com/j-5chneider/stream-kc)
 </div>
+
 
 ## <img src = "webs/rmd.png" class = "plogo" style="padding-top: 2px" /><img src = "webs/shiny.png" class = "plogo" style = "height:43px" /> Flexdashboard for R
 
@@ -440,9 +508,15 @@ you can create this interactive app<br />
 * many integrated widgets
 * browser interpretable
 
+<div class="myfooter">
+  `r icon(name="github", lib="font-awesome")` slides and app: [github.com/j-5chneider/stream-kc](https://github.com/j-5chneider/stream-kc)
+</div>
+
 <div class = "notes">
 markdown-based document
 establish interactivity via shiny-runtime
 </div>
 
 # Example!
+
+#

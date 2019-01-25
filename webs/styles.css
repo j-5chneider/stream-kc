@@ -9,12 +9,21 @@
   height: 67px !important;
 }
 
-/*
-slides > slide:not(.nobackground):before {
-  width: 150px;
-  background-size: 150px;
+.myfooter {
+  height: 0;
+  position: absolute;
+  bottom: 5%;
+  width: 85%;
+  text-align: center;
 }
-*/
+
+.source {
+  position:absolute;
+  top: 10%;
+  width: 90%;
+  text-align: right;
+  
+}
 
 .plogo {
   height: 40px;
