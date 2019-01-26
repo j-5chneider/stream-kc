@@ -16,6 +16,7 @@ library(flexdashboard)
 library(shiny)
 library(shinythemes)
 library(BayesFactor)
+library(plotly)
 
 # authenticate via access token
 # YOU YOULD NEED TO GET YOUR OWN TOKEN
@@ -127,25 +128,25 @@ tw_neg_perc_r <- reactive({
 
 # BF hypothesis 1 ##
 ossc_senti_chi <- reactive({
-  ch_bf <- ossc_senti_r() %>%
-            mutate(positive = ifelse(positive == 0, 0, 1),
-                   negative = ifelse(negative == 0, 0, 1))
-  ch_bf <- matrix(table(ch_bf$positive, ch_bf$negative), 2, 2)
-  ch_bf <- contingencyTableBF(ch_bf, sampleType = "poisson")
-  round(exp(1)^ch_bf@bayesFactor$bf, 3)
+  plot_data <- data.frame()
+  for (i in 10:length(ossc_senti_r()$positive)) {
+    ch_bf_n <- ossc_senti_r()[1:i,] %>%
+      mutate(positive = ifelse(positive == 0, 0, 1),
+             negative = ifelse(negative == 0, 0, 1)) %>%
+      select(negative, positive) %>%
+      gather(key = "posneg", value = "value", 1:2)
+    
+    ch_bf_n <- matrix(table(ch_bf_n$value, ch_bf_n$posneg), 2, 2)
+    
+    ch_bf <- contingencyTableBF(ch_bf_n, sampleType = "indepMulti", fixedMargin = "cols")
+    ossc_senti_chi <- round(exp(1)^ch_bf@bayesFactor$bf, 3)
+    
+    plot_data[i-9, "bf"] <- round(exp(1)^ch_bf@bayesFactor$bf, 3)
+    plot_data[i-9, "n"] <- i
+  }
+  plot_data
 })
 
-# BF hypothesis 2 ##
-ossc_senti_tt <- reactive({
-  tt_bf <- ossc_senti_r()
-  tt_bf <- ttestBF(x = ossc_senti_r()$negative, y = ossc_senti_r()$positive, paired = F)
-  round(exp(1)^tt_bf@bayesFactor$bf, 3)
-})
-
-# BF dataset
-bfdata <- reactive({
-  data.frame(xaxis = c("Hyp1", "Hyp2"), yaxis = c(ossc_senti_chi(), ossc_senti_tt()))
-})
 
 ## OUTPUT ################################################################################################
 renderValueBox({valueBox(tw_count_r(), icon = "fa-twitter")})
@@ -254,38 +255,17 @@ fluidPage(
 fluidPage(
   sidebarLayout(
     sidebarPanel(width = 3,
-                 HTML(paste(tags$b("BF"), tags$sub("hypothesis 1"), "=")),
-                 renderText(ossc_senti_chi()),
-                 HTML(paste(tags$b("BF"), tags$sub("hypothesis 2"), "=")),
-                 renderText(ossc_senti_tt()),
-                 hr(),
+                 # HTML(paste(tags$b("BF"), tags$sub("hypothesis 1"), "=")),
+                 # renderText(ossc_senti_chi()),
+                 # hr(),
                  actionButton('refr', 'pull latest tweets', icon = icon("fa-sync-alt"))
     ),
     mainPanel(width = 9,
-      # renderPlotly({
-      #     ggplot(bfdata(), aes(x=xaxis, y=yaxis)) +
-      #       geom_point(stat="identity", position = "identity") +
-      #       scale_y_continuous(trans='log10') +
-      #       theme(axis.text=element_text(size=12),
-      #             axis.title=element_text(size=12)) +
-      #       labs(title = "Bayes Factors",
-      #        subtitle = "for our two hypotheses",
-      #        x = "Hypotheses",
-      #        y = "BF")
-      # }
-      # )
-        renderPlot({
-          ggplot(bfdata(), aes(x=xaxis, y=yaxis)) +
-            geom_point(stat="identity", position = "identity", size=2) +
-            scale_y_continuous(trans='log10', limits=c(-1,30)) +
-            geom_hline(yintercept=0, color="red", size=1.5) +
-            geom_hline(yintercept=1, color="red", linetype="dashed", size=1.5) +
-            theme(axis.text=element_text(size=16),
-                  axis.title=element_text(size=16)) +
-            labs(x = "",
-                 y = "BF (log10)")
-        },
-        height = 300)
+      renderPlotly({
+          plot_ly(ossc_senti_chi(), type = "scatter", x=~n, y=~bf) %>%
+            layout(autosize = F, height=300)
+      }
+      )
     )
   )
 )
